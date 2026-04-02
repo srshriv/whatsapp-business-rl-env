@@ -1,9 +1,18 @@
 from typing import List, Dict, Any, Tuple
 
-# trajectory: list of (obs, action, reward, info)
-def extract_trajectory_stats(trajectory: List[Tuple[Any, Any, float, Dict[str, Any]]]) -> Dict[str, Any]:
+
+def extract_trajectory_stats(
+    trajectory: List[Tuple[Any, Any, float, Dict[str, Any]]]
+) -> Dict[str, Any]:
     """
     Extracts core trajectory-level statistics used by all graders.
+
+    trajectory: list of (observation, action, reward, info) tuples.
+    Assumes env includes in `info`:
+      - "state_snapshot": dict with keys like
+          "outcome", "satisfaction", "annoyance", "cost_to_business"
+      - "obligation_events": optional list of dicts with "type" in
+          {"created", "completed", "expired"}
     """
     episode_length = len(trajectory)
     if episode_length == 0:
@@ -22,7 +31,6 @@ def extract_trajectory_stats(trajectory: List[Tuple[Any, Any, float, Dict[str, A
     # last transition
     last_obs, last_action, last_reward, last_info = trajectory[-1]
 
-    # assume env puts a state snapshot into info
     state_snapshot = last_info.get("state_snapshot", {})
     final_outcome = state_snapshot.get("outcome", last_info.get("outcome", "unresolved"))
     final_satisfaction = state_snapshot.get("satisfaction", 0.0)
@@ -35,14 +43,17 @@ def extract_trajectory_stats(trajectory: List[Tuple[Any, Any, float, Dict[str, A
     num_obligations_expired = 0
 
     for obs, action, reward, info in trajectory:
-        # count escalations by action_type if available
-        try:
-            if getattr(action, "action_type", None) == "ESCALATE_HUMAN":
+        # Escalations
+        action_type = getattr(action, "action_type", None)
+        if isinstance(action_type, str):
+            if action_type == "ESCALATE_HUMAN":
                 num_escalations += 1
-        except Exception:
-            pass
+        else:
+            # Enum-like: compare by name or value if needed
+            if getattr(action_type, "value", None) == "ESCALATE_HUMAN":
+                num_escalations += 1
 
-        # assume env logs obligation events in info, e.g. info["obligation_events"] = [{"type": "created"}, ...]
+        # Obligations
         for ev in info.get("obligation_events", []):
             ev_type = ev.get("type")
             if ev_type == "created":

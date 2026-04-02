@@ -1,6 +1,7 @@
 from typing import List, Any, Dict, Tuple
 from .metrics import extract_trajectory_stats
 
+
 def _outcome_base_score(outcome: str) -> float:
     if outcome == "converted":
         return 1.0
@@ -8,10 +9,11 @@ def _outcome_base_score(outcome: str) -> float:
         return 0.0
     if outcome == "escalated":
         return 0.6
-    # "unresolved" or others
+    # unresolved or anything else
     return 0.4
 
-    def grade_task1(trajectory: List[Tuple[Any, Any, float, Dict[str, Any]]]) -> float:
+
+def grade_task1(trajectory: List[Tuple[Any, Any, float, Dict[str, Any]]]) -> float:
     stats = extract_trajectory_stats(trajectory)
 
     outcome_score = _outcome_base_score(stats["final_outcome"])
@@ -20,8 +22,8 @@ def _outcome_base_score(outcome: str) -> float:
     length = stats["episode_length"]
     expired = stats["num_obligations_expired"]
 
-    # normalize length for Task 1: ideal <= 10 steps
-    length_penalty = max(0.0, (length - 10) / 10.0)  # 0 if <=10, grows after
+    # Normalize episode length: ideal <= 10 steps
+    length_penalty = max(0.0, (length - 10) / 10.0)
     length_term = max(0.0, 1.0 - length_penalty)
 
     obligations_term = max(0.0, 1.0 - 0.2 * expired)
@@ -46,7 +48,7 @@ def grade_task2(trajectory: List[Tuple[Any, Any, float, Dict[str, Any]]]) -> flo
     cost = stats["total_cost_to_business"]
 
     obligations_term = max(0.0, 1.0 - 0.1 * expired)
-    cost_term = 1.0 / (1.0 + cost)  # higher cost → lower term
+    cost_term = 1.0 / (1.0 + cost)
 
     score = (
         0.45 * outcome_score +
@@ -70,7 +72,6 @@ def grade_task3(trajectory: List[Tuple[Any, Any, float, Dict[str, Any]]]) -> flo
 
     obligations_term = max(0.0, 1.0 - 0.15 * expired)
     cost_term = 1.0 / (1.0 + cost)
-    # mild penalty if escalations are very high; assume <=3 is normal
     esc_penalty = max(0.0, (escalations - 3) / 5.0)
     esc_term = max(0.0, 1.0 - esc_penalty)
 
