@@ -135,3 +135,20 @@ def get_task_config(task_id: str) -> TaskConfig:
             f"Available tasks: {available}"
         )
     return TASK_CONFIGS[task_id]
+
+
+    # OpenEnv compatibility export
+def get_openenv_config(task_id: str) -> dict:
+    """
+    Returns plain dict for OpenEnv server (not TaskConfig object).
+    Compatible with make_env(task_id, config_dict).
+    """
+    config = get_task_config(task_id)
+    return {
+        "task_id": config.task_id,
+        "max_steps": config.max_steps,
+        "user_type_probs": config.user_type_probs,
+        "initial_state_ranges": config.initial_state_ranges,
+        "reward_weights": config.reward_weights,
+        "description": config.description,
+    }
